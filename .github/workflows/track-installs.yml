@@ -1,0 +1,42 @@
+name: Track Plugin Installs
+
+on:
+  repository_dispatch:
+    types: [plugin_install]
+
+permissions:
+  contents: write
+
+jobs:
+  increment-counter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout stats branch
+        uses: actions/checkout@v4
+        with:
+          ref: stats
+          fetch-depth: 1
+
+      - name: Update counts.json
+        run: |
+          node -e '
+            const fs = require("fs");
+            const file = "counts.json";
+            let data = { total: 0, last_updated: "" };
+            if (fs.existsSync(file)) {
+              try { data = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) {}
+            }
+            const payload = ${{ toJson(github.event.client_payload) }} || {};
+            data.total = (Number(data.total) || 0) + 1;
+            data.last_updated = new Date().toISOString().split("T")[0];
+            fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
+            console.log("Updated counts:", data);
+          '
+
+      - name: Commit and push updated counts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add counts.json
+          git commit -m "chore: record install [skip ci]" || echo "No changes to commit"
+          git push origin stats

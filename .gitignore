@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# Local Python virtual environments
+mac_pyenv/
+.venv/
+
+# Node / Build artifacts (Distribution repo contains only release VSIX)
+node_modules/
+*.log
